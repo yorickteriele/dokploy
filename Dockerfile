@@ -31,6 +31,10 @@ WORKDIR /app
 # Set production
 ENV NODE_ENV=production
 
+# The in-app updater pulls from this repository, so forks can update from their own image.
+ARG DOKPLOY_IMAGE=dokploy/dokploy
+ENV DOKPLOY_IMAGE=$DOKPLOY_IMAGE
+
 RUN apt-get update && apt-get install -y tini curl unzip zip apache2-utils iproute2 rsync git-lfs && git lfs install && rm -rf /var/lib/apt/lists/*
 
 # Copy only the necessary files
