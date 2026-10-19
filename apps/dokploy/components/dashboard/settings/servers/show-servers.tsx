@@ -36,6 +36,7 @@ import { TerminalModal } from "../web-server/terminal-modal";
 import { ShowServerActions } from "./actions/show-server-actions";
 import { DeleteServerModal } from "./delete-server-modal";
 import { HandleServers } from "./handle-servers";
+import { ServerResourceUsage } from "./server-resource-usage";
 import { SetupServer } from "./setup-server";
 import { ShowMonitoringModal } from "./show-monitoring-modal";
 import { WelcomeSubscription } from "./welcome-stripe/welcome-subscription";
@@ -212,6 +213,11 @@ export const ShowServers = () => {
 																			{server.sshKeyId ? "Yes" : "No"}
 																		</span>
 																	</div>
+																	{isActive && server.sshKeyId && (
+																		<ServerResourceUsage
+																			serverId={server.serverId}
+																		/>
+																	)}
 																	<div className="flex items-center gap-2 text-sm pt-2 border-t">
 																		<Clock className="size-4 text-muted-foreground" />
 																		<span className="text-xs text-muted-foreground">

@@ -14,6 +14,7 @@ import {
 	initializeTraefikService,
 	type TraefikOptions,
 } from "../setup/traefik-setup";
+import { getGhcrUpdateData, isGhcrRepository } from "./ghcr-update";
 export interface IUpdateData {
 	latestVersion: string | null;
 	updateAvailable: boolean;
@@ -27,6 +28,11 @@ export const DEFAULT_UPDATE_DATA: IUpdateData = {
 /** Returns current Dokploy docker image tag or `latest` by default. */
 export const getDokployImageTag = () => {
 	return process.env.RELEASE_TAG || "latest";
+};
+
+/** Returns the image repository Dokploy updates itself from (Docker Hub or ghcr.io). */
+export const getDokployImageRepository = () => {
+	return process.env.DOKPLOY_IMAGE || "dokploy/dokploy";
 };
 
 /** Returns Dokploy docker service image digest */
@@ -49,8 +55,16 @@ export const getUpdateData = async (
 	currentVersion: string,
 ): Promise<IUpdateData> => {
 	try {
-		const baseUrl =
-			"https://hub.docker.com/v2/repositories/dokploy/dokploy/tags";
+		const repository = getDokployImageRepository();
+		if (isGhcrRepository(repository)) {
+			return await getGhcrUpdateData(
+				repository,
+				currentVersion,
+				getServiceImageDigest,
+			);
+		}
+
+		const baseUrl = `https://hub.docker.com/v2/repositories/${repository}/tags`;
 		let url: string | null = `${baseUrl}?page_size=100`;
 		let allResults: { digest: string; name: string }[] = [];
 
@@ -295,7 +309,7 @@ export const reloadDockerResource = async (
 				imageTag = currentImageTag;
 			}
 
-			command = `docker service update --force --image dokploy/dokploy:${imageTag} ${resourceName}`;
+			command = `docker service update --force --image ${getDokployImageRepository()}:${imageTag} ${resourceName}`;
 		} else {
 			command = `docker service update --force ${resourceName}`;
 		}
