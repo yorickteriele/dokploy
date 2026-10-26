@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   meta:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pr-server]
     outputs:
       image: ${{ steps.meta.outputs.image }}
       version: ${{ steps.meta.outputs.version }}
@@ -27,11 +27,11 @@ jobs:
         id: meta
         run: |
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-          echo "version=$(node -p "require('./apps/dokploy/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "version=$(sed -n 's/^\t*"version": "\(.*\)",$/\1/p' apps/dokploy/package.json | head -n1)" >> "$GITHUB_OUTPUT"
 
   docker-amd:
     needs: [meta]
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, pr-server]
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -64,6 +64,7 @@ jobs:
           build-args: DOKPLOY_IMAGE=${{ needs.meta.outputs.image }}
           outputs: type=image,name=${{ needs.meta.outputs.image }},push-by-digest=true,name-canonical=true,push=true
 
+  # Stays GitHub-hosted: the self-hosted runner is amd64 and building arm64 under QEMU is far too slow.
   docker-arm:
     needs: [meta]
     runs-on: ubuntu-24.04-arm
@@ -101,7 +102,7 @@ jobs:
 
   combine-manifests:
     needs: [meta, docker-amd, docker-arm]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, pr-server]
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
